@@ -18,6 +18,22 @@ impl SlideApp {
     /// Run a command by id (UI commands here, everything else in the engine). Errors show in the
     /// status bar and are returned.
     pub fn run(&mut self, id: &str, params: Value) -> Result<Value, String> {
+        if self.cloud_file_mode
+            && matches!(
+                id,
+                "file.new"
+                    | "file.open"
+                    | "file.close"
+                    | "file.saveAs"
+                    | "app.home"
+                    | "app.backstage"
+                    | "app.closePresentation"
+                    | "app.openDialog"
+                    | "app.saveAsDialog"
+            )
+        {
+            return Err("This action is not available while editing a presentation from BDrive.".into());
+        }
         let r = if UI_COMMANDS.iter().any(|c| c.0 == id) {
             self.run_ui(id, &params)
         } else {

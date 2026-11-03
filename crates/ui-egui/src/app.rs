@@ -117,6 +117,8 @@ impl SlideApp {
             ime_settles_seen: 0,
             ime_interrupt_pending: false,
             ime_reset: HashMap::new(),
+            cloud_file_mode: false,
+            cloud_save_format: "pptx".into(),
         }
     }
 
@@ -171,6 +173,9 @@ impl SlideApp {
 
     /// Opens the File tab's view on `page` (keeping its state when it is already open).
     pub fn open_backstage(&mut self, page: backstage::Page) {
+        if self.cloud_file_mode {
+            return;
+        }
         let key = self.docs_key();
         match &mut self.backstage {
             Some(b) => b.go(page),
@@ -188,6 +193,10 @@ impl SlideApp {
     /// Keeps the File tab's view in step with the open presentations: it closes when one is
     /// opened, created or closed (the result shows), and it is the start screen when none is open.
     fn sync_backstage(&mut self) {
+        if self.cloud_file_mode {
+            self.backstage = None;
+            return;
+        }
         let key = self.docs_key();
         let has_doc = self.session.active().is_some();
         let stale = self.backstage.as_ref().is_some_and(|b| b.docs != key);

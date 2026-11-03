@@ -137,6 +137,9 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     let items = app.ui.qat.clone();
     let mac = app.session.mac_keys;
     for (i, q) in items.iter().enumerate() {
+        if app.cloud_file_mode && matches!(q.id.as_str(), "app.home" | "file.new" | "app.openDialog" | "app.saveAsDialog") {
+            continue;
+        }
         let on = q.id == "app.home" && app.backstage_open();
         let en = is_enabled(app, &q.id);
         let r = crate::widgets::icon_toggle(ui, q.icon(), &tip(q, i, mac), en, on);
@@ -154,6 +157,9 @@ pub fn show(app: &mut SlideApp, ui: &mut Ui) {
     egui::Popup::menu(&r).show(|ui| {
         ui.label(egui::RichText::new("Customize Quick Access Toolbar").strong());
         for c in common() {
+            if app.cloud_file_mode && matches!(c.id.as_str(), "app.home" | "file.new" | "app.openDialog" | "app.saveAsDialog") {
+                continue;
+            }
             let mut on = app.ui.qat.iter().any(|q| q.same(&c.id, &Value::Null));
             if ui.checkbox(&mut on, &c.label).changed() {
                 let key = if on { "add" } else { "remove" };

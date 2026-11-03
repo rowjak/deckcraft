@@ -365,6 +365,11 @@ pub struct SlideApp {
     /// keyed by viewport so a request or completion stamped for another viewport is never bound;
     /// render-only child viewports are rejected before they can create or overwrite an entry.
     ime_reset: HashMap<egui::ViewportId, ImeResetPhase>,
+    /// Cloud-drive single-file editing (`?cloud=1` on the web): no File tab, and New, Open,
+    /// Close and Save As are unavailable so the open presentation cannot be replaced.
+    pub cloud_file_mode: bool,
+    /// Format to use when saving a presentation in `cloud_file_mode` (`pptx`, `potx`, `ppsx`, or `deckcraft`).
+    pub cloud_save_format: String,
 }
 
 /// The platform's in-progress IME composition, as far as this editor tracks it.

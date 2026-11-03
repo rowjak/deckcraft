@@ -449,7 +449,10 @@ impl SlideApp {
 
     pub fn save_as_dialog(&mut self, format: &str) {
         let name = self.session.active().map(|d| d.title()).unwrap_or_else(|| "Presentation".into());
-        let ext = if format == "pptx" { "pptx" } else { "deckcraft" };
+        let ext = match format {
+            "pptx" | "potx" | "ppsx" => format,
+            _ => "deckcraft",
+        };
         let suggested = format!("{name}.{ext}");
         if let Some(pick) = self.services.pick_save.as_mut() {
             if let Some(path) = pick(&suggested) {
@@ -466,7 +469,16 @@ impl SlideApp {
             && let Some(d) = self.session.active()
         {
             match deckcraft_engine::cmd::file::save_bytes(&d.doc, ext) {
-                Ok(bytes) => dl(&suggested, &bytes),
+                Ok(bytes) => {
+                    dl(&suggested, &bytes);
+                    if self.cloud_file_mode {
+                        if let Some(active) = self.session.active_mut() {
+                            active.saved_doc = active.doc.clone();
+                            active.revision += 1;
+                        }
+                        self.set_status("Saved");
+                    }
+                }
                 Err(e) => self.set_status(e.to_string()),
             }
         }
@@ -492,6 +504,9 @@ impl SlideApp {
                 Ok(_) => self.set_status("Saved"),
                 Err(e) => self.set_status(e.to_string()),
             }
+        } else if self.cloud_file_mode {
+            let fmt = self.cloud_save_format.clone();
+            self.save_as_dialog(&fmt);
         } else {
             self.save_as_dialog("deckcraft");
         }
@@ -624,7 +639,20 @@ impl SlideApp {
         match result {
             Err(e) if cmd == "file.openBytes" => self.notify(e),
             Err(e) => self.set_status(e),
-            Ok(()) => {}
+            Ok(()) => {
+                if cmd == "file.openBytes" {
+                    let lower = name.to_ascii_lowercase();
+                    self.cloud_save_format = if lower.ends_with(".potx") {
+                        "potx".into()
+                    } else if lower.ends_with(".ppsx") {
+                        "ppsx".into()
+                    } else if lower.ends_with(".deckcraft") || lower.ends_with(".slidecraft") {
+                        "deckcraft".into()
+                    } else {
+                        "pptx".into()
+                    };
+                }
+            }
         }
         self.drain_requests();
     }
